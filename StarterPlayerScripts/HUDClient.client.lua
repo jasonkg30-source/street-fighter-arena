@@ -12,6 +12,7 @@ local gui = Instance.new("ScreenGui")
 gui.Name = "SFHUD"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = false
+gui.DisplayOrder = 5
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local function bar(x)
@@ -115,6 +116,101 @@ local function findFighterBySide(side)
         if p:GetAttribute("Side") == side then return p end
     end
     return nil
+end
+
+-- ===== Mobile-first How-to-Play onboarding panel =====
+-- Shows on first join; re-openable with a HELP button. English only (user-wide rule).
+local helpPanel
+local helpButton
+
+local function buildOnboarding()
+    -- layer under touch controls but above HUD text; phone screens are short — cap height and scale down
+    helpPanel = Instance.new("Frame")
+    helpPanel.Name = "HowToPlay"
+    local panelH = math.min(330, math.max(0, player.ViewportSize.Y - 120))
+    helpPanel.Size = UDim2.new(0, 320, 0, panelH)
+    helpPanel.Position = UDim2.new(0.5, -160, 0.5, -panelH / 2)
+    helpPanel.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+    helpPanel.BackgroundTransparency = 0.05
+    helpPanel.BorderSizePixel = 0
+    helpPanel.Visible = false
+    helpPanel.Parent = gui
+    local hpCorner = Instance.new("UICorner")
+    hpCorner.CornerRadius = UDim.new(0, 12)
+    hpCorner.Parent = helpPanel
+    local hpLayout = Instance.new("UIListLayout")
+    hpLayout.Padding = UDim.new(0, 5)
+    hpLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    hpLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    hpLayout.Parent = helpPanel
+    local hpPad = Instance.new("UIPadding")
+    hpPad.PaddingTop = UDim.new(0, 8)
+    hpPad.PaddingBottom = UDim.new(0, 8)
+    hpPad.PaddingLeft = UDim.new(0, 10)
+    hpPad.PaddingRight = UDim.new(0, 10)
+    hpPad.Parent = helpPanel
+
+    local function label(text, size, order, color)
+        local t = Instance.new("TextLabel")
+        t.Size = UDim2.new(1, 0, 0, size)
+        t.LayoutOrder = order
+        t.BackgroundTransparency = 1
+        t.Font = Enum.Font.Gotham
+        t.Text = text
+        t.TextColor3 = color or Color3.fromRGB(230, 230, 240)
+        t.TextSize = 14
+        t.TextWrapped = true
+        t.Parent = helpPanel
+        return t
+    end
+
+    label("HOW TO PLAY", 28, 1, Color3.fromRGB(255, 220, 90)).Font = Enum.Font.GothamBlack
+    label("1v1 fighting: the first player is P1 (red side), the second is P2 (blue side). Winner stays, loser goes to the back of the queue!", 58, 2)
+    label("WALK: thumbstick (left)   JUMP: jump button (right)", 20, 3)
+    label("TOUCH: use the action buttons near the jump button", 20, 4)
+    label("KEYBOARD: PUNCH J | KICK K | THROW L | SPECIAL H | BLOCK hold S", 30, 5)
+    label("Fill ENERGY by fighting. At 100% press SPECIAL for your character's signature move!", 40, 6, Color3.fromRGB(120, 220, 255))
+
+    -- close button pinned INSIDE the panel bottom: fixed offset from panel bottom edge,
+    -- so UIListLayout overflow (short screens) can never push it off-panel/off-screen again
+    local closeBtn = Instance.new("TextButton")
+    closeBtn.Name = "CloseHelp"
+    closeBtn.AnchorPoint = Vector2.new(0.5, 1)
+    closeBtn.Position = UDim2.new(0.5, 0, 1, -10)
+    closeBtn.Size = UDim2.new(1, -30, 0, 40)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 60)
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.Text = "GOT IT, LET'S FIGHT!"
+    closeBtn.TextColor3 = Color3.fromRGB(30, 28, 40)
+    closeBtn.TextSize = 16
+    closeBtn.Parent = helpPanel
+    local cbCorner = Instance.new("UICorner")
+    cbCorner.CornerRadius = UDim.new(0, 8)
+    cbCorner.Parent = closeBtn
+    closeBtn.Activated:Connect(function()
+        helpPanel.Visible = false
+    end)
+
+    -- round HELP chip top-right (own layer, clear of P2 HP bar which starts y=30)
+    helpButton = Instance.new("TextButton")
+    helpButton.Name = "HelpBtn"
+    helpButton.Size = UDim2.fromOffset(48, 24)
+    helpButton.Position = UDim2.new(1, -58, 0, 4)
+    helpButton.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+    helpButton.BackgroundTransparency = 0.25
+    helpButton.Font = Enum.Font.GothamBold
+    helpButton.Text = "HELP?"
+    helpButton.TextColor3 = Color3.new(1, 1, 1)
+    helpButton.TextSize = 12
+    helpButton.Parent = gui
+    helpButton.Activated:Connect(function()
+        helpPanel.Visible = not helpPanel.Visible
+    end)
+end
+
+buildOnboarding()
+if helpPanel then
+    helpPanel.Visible = true  -- show once on join
 end
 
 task.spawn(function()

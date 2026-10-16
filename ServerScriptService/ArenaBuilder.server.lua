@@ -96,7 +96,6 @@ function ArenaBuilder:Build()
     p1.Size = Vector3.new(4, 1, 4)
     p1.Position = Vector3.new(-Config.Arena.SpawnOffset, 1, 0)
     p1.Anchored = true
-    p1.Disabled = true
     p1.Neutral = true
     p1.Transparency = 1
     p1.Parent = folder
@@ -107,6 +106,16 @@ function ArenaBuilder:Build()
 
     -- Team forcefields color rings on players: handled by FighterSpawner
     return folder
+end
+
+-- Boot: build the arena when this Script runs (ArenaBuilder is a Script in ServerScriptService).
+if not workspace:FindFirstChild("SFArena") then
+    local ok, err = pcall(function()
+        ArenaBuilder:Build()
+    end)
+    if not ok then
+        warn("[ArenaBuilder] build failed: " .. tostring(err))
+    end
 end
 
 function ArenaBuilder:GetFighterSpawn(side)
